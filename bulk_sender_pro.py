@@ -102,8 +102,13 @@ class BulkEmailEngine:
 
     def connect(self):
         try:
-            self.server = smtplib.SMTP(Config.SMTP_SERVER, Config.SMTP_PORT)
-            self.server.starttls()
+            # Handle port 465 (SSL) vs other ports (usually 587 with STARTTLS)
+            if Config.SMTP_PORT == 465:
+                self.server = smtplib.SMTP_SSL(Config.SMTP_SERVER, Config.SMTP_PORT)
+            else:
+                self.server = smtplib.SMTP(Config.SMTP_SERVER, Config.SMTP_PORT)
+                self.server.starttls()
+            
             self.server.login(Config.EMAIL_USER, Config.EMAIL_PASS)
             logger.info("Connected to SMTP Server successfully.")
         except Exception as e:
