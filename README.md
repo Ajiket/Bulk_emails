@@ -1,234 +1,69 @@
-# Bulk_emails
-Automated bulk email sender for GST-PTRC show‑cause notices. 
-# PTRC Bulk Email Sender
+# 📧 Automated Bulk Email Responder (Production Grade)
 
-Automated bulk email sender for PTRC show‑cause notices.  
-The script reads a CSV of taxpayers, maps each **Sr. No.** to a PDF notice (`A--<SrNo>.pdf`), and sends personalized emails with the correct attachment to each recipient using SMTP (Gmail or Brevo).
+An enterprise-ready Python solution for stateful, large-scale email distribution. Specifically designed for **GST-PTRC show-cause notices**, this system maps recipient metadata to PDF attachments and manages delivery across Google Workspace quotas.
 
 ---
 
-## Features
+## 🚀 Key Features
 
-- Send emails to **1,000+ recipients** with a single command.
-- Per‑recipient PDF attachment based on `Sr. No.` (e.g. `Sr No 489 → A--489.pdf`).
-- Resumable sending (skip Sr. Nos already sent).
-- Robust email validation and file‑existence checks.
-- Pluggable SMTP backends:
-  - Gmail (with App Password, subject to Gmail quota).
-  - Brevo SMTP relay for higher daily volume.
-- Clear console logging and basic summary statistics.
+*   **Production Architecture:** Object-Oriented Design (OOD) for modularity and maintainability.
+*   **State Persistence:** Automatic session recovery using a persistent `send_report.csv` file.
+*   **Intelligent Throttling:** Configurable pacing to safely handle Google Workspace's 2,000 emails/day limit.
+*   **Audit-Ready Logging:** Real-time feedback loop tracking delivery status, recipient names, and failure reasons.
+*   **Reliable File Mapping:** Dynamic resolution of PDF notices based on record serial numbers.
 
 ---
 
-## Project structure
-
-Example layout:
+## 📂 Project Structure
 
 ```text
 Bulk_emails/
-├── SEGMENT A NOTICES/        # Folder containing all notice PDFs
-│   ├── A--31.pdf
-│   ├── A--32.pdf
-│   ├── ...
-│   └── A--1701.pdf
-├── 1701.csv                  # Main CSV with Sr. No. and Email
-├── .env                      # SMTP credentials (NOT committed)
-├── brevo_300.py              # Script to send up to 300 emails via Brevo
-├── robust_1701send.py        # Script used with Gmail (subject to daily limits)
+├── send folder/          # Directory for PDF attachments (e.g., A--31.pdf)
+├── send.csv              # Source file with Sr. No., Name, and Email
+├── .env                  # Secure SMTP credentials (NOT committed)
+├── bulk_sender_pro.py    # Main Production Engine
+├── UNDERSTAND.md         # Deep-dive technical architecture guide
+├── sync_session.bat      # One-click GitHub synchronization tool
 └── README.md
+```
 
-You can rename/reorganize as needed; keep the paths in the scripts in sync.
+---
 
-Prerequisites
-Python 3.10+ installed.
+## 🛠️ Setup & Usage
 
-A working SMTP account:
+### 1. Prerequisites
+- Python 3.10+
+- Google Workspace account (recommended for 2,000/day limit)
+- 2-Step Verification enabled + App Password generated.
 
-Gmail with 2‑Step Verification + App Password; or
+### 2. Environment Configuration
+Create a `.env` file in the root directory:
+```env
+EMAIL_USER=your-email@workspace.com
+EMAIL_PASS=your-16-char-app-password
+```
 
-Brevo account with an active SMTP key.
-
-Basic familiarity with running commands in Command Prompt / PowerShell or a terminal.
-
-CSV and notice mapping
-The script assumes:
-
-CSV has at least the following columns:
-
-Sr. No. – numeric serial number (e.g. 31, 340, 489, 1701)
-
-Email – recipient email address
-
-PDF notice filenames follow:
-
-A--<SrNo>.pdf
-
-Examples:
-
-Sr. No. = 31 → A--31.pdf
-
-Sr. No. = 340 → A--340.pdf
-
-Sr. No. = 489 → A--489.pdf
-
-Sr. No. = 1701 → A--1701.pdf
-
-If there are gaps in serial numbers (e.g. CSV jumps from 340 to 489), the script ignores unmatched PDFs (e.g. A--341.pdf…A--488.pdf are never used).
-
-Setup
-1. Clone the repository
-
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
-
-2. Create and activate a virtual environment (optional but recommended)
-
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-
-3. Install dependencies
-
-pip install python-dotenv
-
-(If you add more packages later, document them here.)
-
-SMTP configuration (.env)
-Create a file named .env in the project root (same folder as the script) and do not commit it.
-
-Option A – Gmail (App Password)
-
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-EMAIL_USER=csnacptd0001@gmail.com
-EMAIL_PASS=your_16_char_app_password
-
-Notes:
-
-Enable 2‑Step Verification in your Google account.
-
-Create an App Password for “Mail” and use that as EMAIL_PASS.
-
-Subject to Gmail’s daily sending limits (typically ~500/day for personal accounts).[web:95][web:101]
-
-Option B – Brevo SMTP (recommended for larger batches)
-
-SMTP_SERVER=smtp-relay.brevo.com
-SMTP_PORT=587
-EMAIL_USER=your-brevo-login@smtp-brevo.com
-EMAIL_PASS=your_brevo_smtp_key
-FROM_EMAIL=csnacptd0001@gmail.com
-
-EMAIL_USER = Brevo SMTP login (shown on the Brevo “SMTP & API” page, not your Gmail).
-
-EMAIL_PASS = full Brevo SMTP key value.
-
-FROM_EMAIL = the sender shown to recipients (your Gmail), which must be verified in Brevo.[web:128][web:132]
-
-Usage
-1. Prepare files
-Place all notice PDFs in the SEGMENT A NOTICES folder.
-
-Ensure 1701.csv (or your CSV) is in the project root and contains Sr. No. and Email columns.
-
-2. Sending via Brevo (up to 300 emails per run)
-Example brevo_300.py usage:
-
-bash
-python brevo_300.py
-
-What this script does:
-
-Connects to Brevo SMTP with credentials from .env.
-
-Reads all rows from 1701.csv.
-
-Skips rows:
-
-With invalid/empty Email.
-
-With missing PDF A--<SrNo>.pdf.
-
-With Sr. No. below a configured resume point (e.g. < 215).
-
-Sends up to 300 emails in one run, logging each success.
-
-You can adjust:
-
-CSV path: CSV_PATH = "1701.csv"
-
-Notices folder: ATTACH_DIR = "SEGMENT A NOTICES"
-
-Resume serial: change if sr_no_int < 215: to your desired starting point.
-
-Hard limit per run: change sent >= 300 to another number if your Brevo plan allows more.
-
-### 4. Sending via Google Workspace (Recommended for 2,000+ emails)
-Example `bulk_sender_pro.py` usage:
-
+### 3. Execution
+Ensure your recipients are in `send.csv` and attachments are in `send folder/`, then run:
 ```bash
 python bulk_sender_pro.py
 ```
 
-**Key Improvements in this script:**
-- **Dynamic Feedback File**: Generates `send_report.csv` which tracks every email attempt.
-- **Automatic Resume**: It reads the report and automatically skips anyone already successfully sent. No more manual "resume from" adjustments.
-- **Detailed Tracking**: The report includes Recipient Name, Status (Sent/Failed), Notice Name, and Timestamp.
-- **Safe Pacing**: Includes a small delay between sends to avoid triggering burst-rate spam filters.
+---
 
-**Google Workspace Requirements:**
-- Upgrade your account to Google Workspace ($6/mo tier or higher) to increase the daily limit to 2,000 emails.
-- Ensure you use a fresh **App Password** for the Workspace account in your `.env`.
+## 📊 Monitoring & Tracking
+The system generates a **`send_report.csv`** file in real-time. Use this to:
+- Verify which recipients received the notice.
+- Identify and troubleshoot failed deliveries (e.g., invalid email or missing attachment).
+- Automatically resume sending from where the last session stopped.
 
 ---
 
-## Configuration parameters
-Typical parameters in `bulk_sender_pro.py`:
-- `SEND_DELAY = 1.5`: Seconds to wait between emails.
-- `REPORT_PATH = "send_report.csv"`: Path to your feedback file.
-- `CSV_PATH = "1701.csv"`: Your source list.
-- `ATTACH_DIR = "SEGMENT A NOTICES"`: Folder with PDFs.
+## 🤝 Technical Deep Dive
+For a detailed explanation of the system's design patterns, rate limiting strategies, and security protocols, refer to [UNDERSTAND.md](./UNDERSTAND.md).
 
-## Logging & Feedback
-The `send_report.csv` file contains:
-- **Sr. No.**
-- **Recipient Name**
-- **Email**
-- **Notice Name**
-- **Status** (Sent / Failed / Pending)
-- **Timestamp**
-- **Error** (Reason for failure)
-
-
-Safety and rate limits
-Gmail: Enforces daily sending limits. If you hit an error like
-550 5.4.5 Daily user sending limit exceeded, wait for the 24‑hour window to reset or switch to Brevo/another SMTP provider.[web:95][web:96]
-
-Brevo: Enforces plan‑specific daily caps (e.g., 300/day on free tier). The MAX_EMAILS_PER_RUN guard helps keep you within this limit.[web:128]
-
-Always test with 1–2 rows (and small PDFs) before running a full batch.
-
-Customization ideas
-Per‑recipient subject/body using extra columns in the CSV.
-
-HTML email body instead of plain text.
-
-Logging to a file (e.g. bulk_send.log) with timestamps.
-
-Simple CLI flags to choose Gmail vs Brevo at runtime.
-
-Disclaimer
-This tool is intended for legitimate transactional communication with taxpayers (e.g., PTRC notices).
-Ensure you comply with:
-
-Local regulations on electronic communication.
-
-Provider terms of service (Gmail, Brevo, AWS SES, etc.).[web:57][web:72]
-
-License
-Add your chosen license here (e.g. MIT, Apache‑2.0), or keep it private if this is an internal project.
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 
 
