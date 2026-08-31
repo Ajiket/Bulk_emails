@@ -24,6 +24,16 @@ load_dotenv()
 
 class Config:
     """Production Configuration Management"""
+    @classmethod
+    def validate(cls):
+        missing = []
+        if not cls.EMAIL_USER: missing.append("EMAIL_USER")
+        if not cls.EMAIL_PASS: missing.append("EMAIL_PASS")
+        if missing:
+            logger.critical(f"Missing environment variables: {', '.join(missing)}")
+            logger.info("Check your .env file for correct formatting (no spaces, no extra characters).")
+            raise SystemExit(1)
+
     # Use environment variables for SMTP settings, falling back to Gmail defaults
     SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
@@ -194,6 +204,7 @@ class BulkEmailEngine:
         }
 
 if __name__ == "__main__":
+    Config.validate()
     engine = BulkEmailEngine()
     try:
         engine.connect()
