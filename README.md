@@ -165,57 +165,42 @@ Resume serial: change if sr_no_int < 215: to your desired starting point.
 
 Hard limit per run: change sent >= 300 to another number if your Brevo plan allows more.
 
-3. Sending via Gmail (subject to daily quota)
-Example robust_1701send.py usage:
+### 4. Sending via Google Workspace (Recommended for 2,000+ emails)
+Example `bulk_sender_pro.py` usage:
 
-bash
-python robust_1701send.py
+```bash
+python bulk_sender_pro.py
+```
 
-This script:
+**Key Improvements in this script:**
+- **Dynamic Feedback File**: Generates `send_report.csv` which tracks every email attempt.
+- **Automatic Resume**: It reads the report and automatically skips anyone already successfully sent. No more manual "resume from" adjustments.
+- **Detailed Tracking**: The report includes Recipient Name, Status (Sent/Failed), Notice Name, and Timestamp.
+- **Safe Pacing**: Includes a small delay between sends to avoid triggering burst-rate spam filters.
 
-Uses Gmail’s SMTP server and App Password from .env.
+**Google Workspace Requirements:**
+- Upgrade your account to Google Workspace ($6/mo tier or higher) to increase the daily limit to 2,000 emails.
+- Ensure you use a fresh **App Password** for the Workspace account in your `.env`.
 
-Validates all email addresses.
+---
 
-Skips rows with invalid email or missing file.
+## Configuration parameters
+Typical parameters in `bulk_sender_pro.py`:
+- `SEND_DELAY = 1.5`: Seconds to wait between emails.
+- `REPORT_PATH = "send_report.csv"`: Path to your feedback file.
+- `CSV_PATH = "1701.csv"`: Your source list.
+- `ATTACH_DIR = "SEGMENT A NOTICES"`: Folder with PDFs.
 
-Can be configured to start after a given Sr. No. so you can resume on the next day after hitting Gmail’s daily limit.[web:94][web:95]
+## Logging & Feedback
+The `send_report.csv` file contains:
+- **Sr. No.**
+- **Recipient Name**
+- **Email**
+- **Notice Name**
+- **Status** (Sent / Failed / Pending)
+- **Timestamp**
+- **Error** (Reason for failure)
 
-Configuration parameters
-Typical parameters you might tweak at the top of the script:
-
-python
-CSV_PATH = "1701.csv"
-ATTACH_DIR = "SEGMENT A NOTICES"
-SUBJECT = "Show-Cause Notice"
-RESUME_AFTER_SRNO = 214   # start sending from Sr. No. 215
-MAX_EMAILS_PER_RUN = 300  # Brevo free plan
-FROM_EMAIL = os.getenv("FROM_EMAIL", EMAIL_USER)
-
-Logging & robustness
-The scripts log to the console:
-
-[OK] lines for each successful send.
-
-[SKIP] lines for:
-
-Already-sent serial numbers (below RESUME_AFTER_SRNO).
-
-Invalid or empty emails.
-
-Missing PDF files.
-
-Final summary with counts of:
-
-Sent emails.
-
-Skipped invalid emails.
-
-Skipped missing files.
-
-Skipped serials below the resume threshold.
-
-This design lets you safely re-run the script multiple times without re-sending to already processed recipients.
 
 Safety and rate limits
 Gmail: Enforces daily sending limits. If you hit an error like
