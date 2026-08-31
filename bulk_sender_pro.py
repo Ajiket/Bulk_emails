@@ -24,8 +24,9 @@ load_dotenv()
 
 class Config:
     """Production Configuration Management"""
-    SMTP_SERVER = "smtp.gmail.com"
-    SMTP_PORT = 587
+    # Use environment variables for SMTP settings, falling back to Gmail defaults
+    SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
     EMAIL_USER = os.getenv("EMAIL_USER")
     EMAIL_PASS = os.getenv("EMAIL_PASS")
     
